@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="荷造り">
+<meta name="theme-color" content="#f4f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111214" media="(prefers-color-scheme: dark)">
+<title>荷造りチェック</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{
+  --bg:#f4f5f7; --card:#ffffff; --text:#1c1d21; --sub:#6b6f78; --line:#e3e5ea;
+  --accent:#1f7a5c; --accent-soft:#e3f3ec; --accent-ink:#ffffff;
+  --gray:#a3a7af; --gray-soft:#eceef1; --danger:#c43c3c; --sheet:#ffffff;
+  --shadow:0 1px 2px rgba(0,0,0,.06),0 4px 14px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#111214; --card:#1c1d21; --text:#eceef1; --sub:#9a9ea7; --line:#2c2e33;
+    --accent:#3fb98c; --accent-soft:#183a2e; --accent-ink:#0d1a14;
+    --gray:#62666e; --gray-soft:#24262b; --danger:#e26b6b; --sheet:#1f2024;
+    --shadow:none;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text)}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  font-size:16px;line-height:1.45;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  -webkit-text-size-adjust:100%;
+}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+input,select{font:inherit;color:var(--text)}
+.app{max-width:640px;margin:0 auto;padding:0 16px 120px}
+
+/* header */
+.top{position:sticky;top:0;z-index:5;background:var(--bg);padding:12px 0 10px;display:flex;align-items:center;gap:8px}
+.top h1{font-size:22px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex:none}
+.icon-btn:active{background:var(--gray-soft)}
+.icon-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.pill{font-size:14px;padding:7px 12px;border-radius:999px;background:var(--gray-soft);flex:none}
+.pill.on{background:var(--accent);color:var(--accent-ink)}
+
+/* progress */
+.summary{background:var(--card);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);margin-bottom:14px}
+.summary .tname{font-size:18px;font-weight:700;margin-bottom:6px;word-break:break-all}
+.summary .row{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;color:var(--sub)}
+.summary .big{font-size:22px;font-weight:700;color:var(--text)}
+.bar{height:8px;border-radius:99px;background:var(--gray-soft);overflow:hidden;margin-top:8px}
+.bar>i{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .25s}
+.hint{font-size:12px;color:var(--sub);margin-top:8px}
+
+/* trip list */
+.trip{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:16px;padding:14px 12px 14px 16px;box-shadow:var(--shadow);margin-bottom:10px}
+.trip .main{flex:1;min-width:0}
+.trip .name{font-weight:700;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trip .meta{font-size:13px;color:var(--sub);margin-top:2px}
+.trip .bar{margin-top:8px;height:6px}
+.trip.done .name::after{content:" 完了";font-size:12px;color:var(--accent);font-weight:700}
+.empty{text-align:center;color:var(--sub);padding:48px 16px}
+
+/* category */
+.cat{background:var(--card);border-radius:16px;box-shadow:var(--shadow);margin-bottom:12px;overflow:hidden}
+.cat-h{display:flex;align-items:center;gap:6px;padding:4px 4px 4px 0;border-bottom:1px solid var(--line);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+.cat.collapsed .cat-h{border-bottom:0}
+.cat-h .fold{width:40px;height:44px;display:grid;place-items:center;flex:none}
+.cat-h .fold svg{width:18px;height:18px;stroke:var(--sub);fill:none;stroke-width:2.2;transition:transform .2s}
+.cat.collapsed .fold svg{transform:rotate(-90deg)}
+.cat-h .title{flex:1;min-width:0;display:flex;align-items:center;gap:8px;padding:10px 0;font-weight:700}
+.cat-h .title span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cat-h .count{font-style:normal;font-size:13px;font-weight:600;color:var(--sub);background:var(--gray-soft);border-radius:99px;padding:2px 9px;flex:none}
+.cat.all-done .count{background:var(--accent);color:var(--accent-ink)}
+.cat-h .more{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;flex:none}
+.cat-h .more svg{width:20px;height:20px;fill:var(--sub)}
+.cat.collapsed .items{display:none}
+.pressable{transition:background .12s}
+.pressable.pressing{background:var(--gray-soft)}
+
+/* item */
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:52px;border-top:1px solid var(--line);user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;position:relative}
+.item:first-child{border-top:0}
+.box{width:26px;height:26px;border-radius:50%;border:2px solid var(--gray);flex:none;display:grid;place-items:center;transition:all .15s}
+.box svg{width:16px;height:16px;stroke:var(--accent-ink);fill:none;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;opacity:0}
+.item .label{flex:1;min-width:0}
+.item.checked .box{background:var(--accent);border-color:var(--accent)}
+.item.checked .box svg{opacity:1}
+.item.checked .label{color:var(--sub)}
+.item.excluded{background:var(--gray-soft)}
+.item.excluded .box{border-style:dashed;border-color:var(--gray)}
+.item.excluded .label{color:var(--gray);text-decoration:line-through}
+.item.excluded::after{content:"対象外";font-size:11px;color:var(--gray);border:1px solid var(--gray);border-radius:6px;padding:1px 6px;flex:none}
+.item .del,.item .grip{display:none}
+.editing .item .del{display:grid;place-items:center;width:32px;height:32px;border-radius:50%;background:var(--danger);color:#fff;flex:none;font-size:18px;line-height:1}
+.editing .item::after{display:none}
+.editing .item .box{display:none}
+.editing .item .label{color:var(--text);text-decoration:none}
+.add-row{display:none;width:100%;text-align:left;padding:12px 14px;border-top:1px solid var(--line);color:var(--accent);font-weight:600}
+.editing .add-row{display:block}
+.add-cat{display:none;width:100%;padding:14px;border-radius:16px;border:2px dashed var(--line);color:var(--accent);font-weight:600;margin-bottom:12px}
+.editing .add-cat{display:block}
+.hide-done .item.checked,.hide-done .item.excluded{display:none}
+
+/* fab */
+.fab{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:calc(24px + env(safe-area-inset-bottom));width:60px;height:60px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;box-shadow:0 6px 18px rgba(0,0,0,.22);z-index:6}
+.fab svg{width:28px;height:28px;stroke:currentColor;stroke-width:2.6;fill:none;stroke-linecap:round}
+.fab:active{transform:scale(.95)}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.38);z-index:20;opacity:0;transition:opacity .2s}
+.scrim.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;background:var(--sheet);border-radius:18px 18px 0 0;padding:8px 16px calc(16px + env(safe-area-inset-bottom));max-width:640px;margin:0 auto;transform:translateY(100%);transition:transform .22s ease-out;max-height:85vh;overflow:auto}
+.sheet.show{transform:none}
+.sheet .grab{width:38px;height:5px;border-radius:99px;background:var(--line);margin:4px auto 10px}
+.sheet h2{font-size:17px;margin:4px 0 12px;text-align:center}
+.sheet .opt{display:block;width:100%;text-align:left;padding:14px 12px;border-radius:12px;font-size:16px}
+.sheet .opt:active{background:var(--gray-soft)}
+.sheet .opt small{display:block;color:var(--sub);font-size:12px}
+.sheet .opt.danger{color:var(--danger)}
+.sheet .sep{height:1px;background:var(--line);margin:6px 0}
+.field{display:block;margin-bottom:12px}
+.field>span{display:block;font-size:13px;color:var(--sub);margin-bottom:4px}
+.field input[type=text],.field select{width:100%;padding:12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:16px}
+.check-line{display:flex;align-items:center;gap:10px;font-size:15px;margin:4px 0 14px}
+.check-line input{width:20px;height:20px;accent-color:var(--accent)}
+.btns{display:flex;gap:10px}
+.btns button{flex:1;padding:13px;border-radius:12px;font-weight:700;background:var(--gray-soft)}
+.btns .primary{background:var(--accent);color:var(--accent-ink)}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(100px + env(safe-area-inset-bottom));transform:translate(-50%,20px);background:#2a2c31;color:#fff;border-radius:12px;padding:10px 12px 10px 16px;display:flex;gap:14px;align-items:center;font-size:14px;z-index:30;opacity:0;pointer-events:none;transition:all .2s;max-width:calc(100% - 32px)}
+.toast.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast button{color:#7ee0b8;font-weight:700;padding:4px 6px}
+
+.section-label{font-size:13px;color:var(--sub);margin:22px 4px 8px}
+.link-row{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:8px;box-shadow:var(--shadow);width:100%;text-align:left}
+.link-row small{color:var(--sub)}
+.note{font-size:13px;color:var(--sub);padding:4px 4px 0}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="layer"></div>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastUndo">元に戻す</button></div>
+
+<script>
+'use strict';
+/* ========== 初期ひな形 ========== */
+const DEFAULT_TEMPLATE = [
+  ['貴重品・書類',['財布・身分証明書','交通系ICカード','家の鍵','交通チケット（メール確認）']],
+  ['PC関連',['ノートPC','PC用充電器','変換ハブ']],
+  ['デジタルガジェット',['iPhone用充電器','モバイルバッテリー','イヤホン']],
+  ['スキンケア',['ボディソープ','化粧水','乳液','クリーム','髭剃り']],
+  ['衛生・潔癖対策',['歯ブラシ・歯磨き粉','爪切り','綿棒','ポケットティッシュ','ハンカチ','肌に優しいタオル','ヘアワックス','ヘアバンド']],
+  ['衣類・ファッション小物',['着替え（日数分＋予備1）','ズボン','下着（日数分＋予備1）','靴下（日数分＋予備1）','パジャマ／ルームウェア','羽織るもの（カーディガンなど）','折りたたみ傘']],
+  ['視力ケア用品',['メガネ・メガネケース','コンタクトレンズ','コンタクト洗浄・保存液','コンタクトケース']],
+  ['その他（薬・食品・快適グッズ）',['乗り物酔い止め薬','目薬','ステロイド軟膏','頭痛薬','アレグラ','赤玉','水・お茶','ビニール袋','AGA']],
+];
+const KEY = 'nizukuri-check-v1';
+const uid = () => Math.random().toString(36).slice(2,10) + Date.now().toString(36).slice(-4);
+
+function makeTemplate(){
+  return { cats: DEFAULT_TEMPLATE.map(([name,items]) => ({ id:uid(), name, items: items.map(n => ({id:uid(), name:n})) })) };
+}
+
+/* ========== 保存 ========== */
+let db;
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ db = JSON.parse(raw); }
+  }catch(e){ db = null; }
+  if(!db || !db.template){ db = { version:1, template: makeTemplate(), trips: [] }; save(); }
+}
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch(e){ alert('保存できませんでした。設定から書き出しでバックアップを取ってください。'); }
+}
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+
+/* ========== 取り消し ========== */
+let undoSnap = null, toastTimer = null;
+function snapshot(){ undoSnap = JSON.stringify(db); }
+function toast(msg, undoable){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastUndo').style.display = undoable ? '' : 'none';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 4000);
+}
+document.getElementById('toastUndo').onclick = () => {
+  if(!undoSnap) return;
+  db = JSON.parse(undoSnap); undoSnap = null; save(); render();
+  document.getElementById('toast').classList.remove('show');
+};
+
+/* ========== 計算 ========== */
+function stats(cats){
+  let total=0, done=0, ex=0;
+  for(const c of cats) for(const it of c.items){
+    if(it.s===2) ex++; else { total++; if(it.s===1) done++; }
+  }
+  return {total, done, ex};
+}
+const pct = s => s.total ? Math.round(s.done/s.total*100) : 0;
+const fmtDate = ts => { const d=new Date(ts); return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`; };
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ========== 画面状態 ========== */
+const ui = { editing:false, hideDone:false, collapsed:{} };
+function route(){
+  const h = location.hash.replace(/^#\/?/,'');
+  if(h.startsWith('trip/')) return {view:'trip', id:h.slice(5)};
+  if(h==='template') return {view:'template'};
+  if(h==='settings') return {view:'settings'};
+  return {view:'home'};
+}
+window.addEventListener('hashchange', () => { ui.editing=false; render(); window.scrollTo(0,0); });
+
+const ICON = {
+  back:'<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>',
+  gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>',
+  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  check:'<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  chev:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
+  dots:'<svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
+};
+
+/* ========== 描画 ========== */
+const app = document.getElementById('app');
+function render(){
+  const r = route();
+  if(r.view==='trip'){
+    const trip = db.trips.find(t => t.id===r.id);
+    if(!trip){ location.hash=''; return; }
+    renderList(trip, false);
+  } else if(r.view==='template'){
+    renderList(db.template, true);
+  } else if(r.view==='settings'){
+    renderSettings();
+  } else renderHome();
+}
+
+function renderHome(){
+  const trips = [...db.trips].sort((a,b) => b.createdAt - a.createdAt);
+  app.innerHTML = `
+    <div class="top"><h1>荷造りチェック</h1>
+      <button class="icon-btn" data-act="settings" aria-label="設定">${ICON.gear}</button></div>
+    ${trips.length ? trips.map(t => {
+      const s = stats(t.cats);
+      return `<div class="trip pressable ${s.total && s.done===s.total ? 'done':''}" data-trip="${t.id}">
+        <div class="main"><div class="name">${esc(t.name)}</div>
+          <div class="meta">${fmtDate(t.createdAt)}　${s.done} / ${s.total}${s.ex?`（対象外 ${s.ex}）`:''}</div>
+          <div class="bar"><i style="width:${pct(s)}%"></i></div></div>
+        <button class="icon-btn" data-trip-menu="${t.id}" aria-label="メニュー"><svg viewBox="0 0 24 24" style="fill:var(--sub);stroke:none">${ICON.dots.replace(/<\/?svg[^>]*>/g,'')}</svg></button>
+      </div>`;
+    }).join('') : `<div class="empty">まだ記録がありません。<br>右下の ＋ から、出張・旅行の名前を付けて作ってください。</div>`}
+    <button class="fab" data-act="new-trip" aria-label="新しい記録">${ICON.plus}</button>`;
+  bindPress(app.querySelectorAll('.trip'), {
+    tap: el => { location.hash = '#/trip/' + el.dataset.trip; },
+    long: el => tripMenu(el.dataset.trip),
+  });
+}
+
+function renderList(obj, isTemplate){
+  const s = isTemplate ? null : stats(obj.cats);
+  const title = isTemplate ? 'ひな形の編集' : '';
+  const editing = isTemplate || ui.editing;
+  app.innerHTML = `
+    <div class="top">
+      <button class="icon-btn" data-act="back" aria-label="戻る">${ICON.back}</button>
+      <h1>${esc(title)}</h1>
+      ${isTemplate ? '' : `<button class="pill ${ui.hideDone?'on':''}" data-act="hide-done">済を隠す</button>
+      <button class="pill ${ui.editing?'on':''}" data-act="edit">${ui.editing?'完了':'編集'}</button>`}
+    </div>
+    ${isTemplate ? `<div class="summary"><div class="hint">ここで直した内容は、<b>これから作る記録</b>に使われます。作成済みの記録は変わりません。</div></div>` : `
+    <div class="summary">
+      <div class="tname">${esc(obj.name)}</div>
+      <div class="row"><span><span class="big">${s.done}</span> / ${s.total} 個</span><span>${pct(s)}%${s.ex?`　対象外 ${s.ex}`:''}</span></div>
+      <div class="bar"><i style="width:${pct(s)}%"></i></div>
+      <div class="hint">タップでチェック／長押しで対象外。カテゴリ名も同じ操作でまとめて切り替わります。</div>
+    </div>`}
+    <div class="${editing?'editing':''} ${ui.hideDone && !editing?'hide-done':''}">
+    ${obj.cats.map(c => {
+      const cs = stats([c]);
+      const collapsed = ui.collapsed[c.id] && !editing;
+      return `<div class="cat ${collapsed?'collapsed':''} ${!isTemplate && cs.total && cs.done===cs.total?'all-done':''}" data-cat="${c.id}">
+        <div class="cat-h">
+          <button class="fold" data-fold="${c.id}" aria-label="開閉">${ICON.chev}</button>
+          <div class="title pressable" data-cat-title="${c.id}"><span>${esc(c.name)}</span>${isTemplate?'':`<em class="count">${cs.done}/${cs.total}</em>`}</div>
+          <button class="more" data-cat-menu="${c.id}" aria-label="カテゴリのメニュー">${ICON.dots}</button>
+        </div>
+        <div class="items">
+          ${c.items.map(it => `<div class="item pressable ${it.s===1?'checked':''} ${it.s===2?'excluded':''}" data-item="${it.id}" data-cat-of="${c.id}">
+              <span class="box">${ICON.check}</span><span class="label">${esc(it.name)}</span>
+              <button class="del" data-del="${it.id}" aria-label="削除">−</button>
+            </div>`).join('')}
+          <button class="add-row" data-add-in="${c.id}">＋ 項目を追加</button>
+        </div>
+      </div>`;
+    }).join('')}
+    <button class="add-cat" data-act="add-cat">＋ カテゴリを追加</button>
+    </div>
+    <button class="fab" data-act="add-item" aria-label="項目を追加">${ICON.plus}</button>`;
+
+  const findCat = id => obj.cats.find(c => c.id===id);
+  const findItem = (cid, iid) => findCat(cid).items.find(i => i.id===iid);
+
+  bindPress(app.querySelectorAll('.item'), {
+    tap: el => {
+      const it = findItem(el.dataset.catOf, el.dataset.item);
+      if(editing){ renameItemSheet(obj, findCat(el.dataset.catOf), it, isTemplate); return; }
+      it.s = it.s===0 ? 1 : 0;   // 対象外の項目をタップしたときは、未チェックに戻す
+      save(); render();
+    },
+    long: el => {
+      if(editing) return;
+      const it = findItem(el.dataset.catOf, el.dataset.item);
+      it.s = it.s===2 ? 0 : 2;
+      save(); render();
+    },
+  });
+  bindPress(app.querySelectorAll('[data-cat-title]'), {
+    tap: el => {
+      const c = findCat(el.dataset.catTitle);
+      if(editing){ renameCatSheet(obj, c); return; }
+      const active = c.items.filter(i => i.s!==2);
+      const allDone = active.length && active.every(i => i.s===1);
+      snapshot();
+      active.forEach(i => i.s = allDone ? 0 : 1);
+      save(); render();
+      toast(`「${c.name}」を${allDone?'すべて未チェックに':'すべてチェック'}しました`, true);
+    },
+    long: el => {
+      if(editing) return;
+      const c = findCat(el.dataset.catTitle);
+      const allEx = c.items.length && c.items.every(i => i.s===2);
+      snapshot();
+      c.items.forEach(i => i.s = allEx ? 0 : 2);
+      save(); render();
+      toast(`「${c.name}」を${allEx?'対象に戻しました':'すべて対象外にしました'}`, true);
+    },
+  });
+  app.querySelectorAll('[data-fold]').forEach(b => b.onclick = () => { ui.collapsed[b.dataset.fold] = !ui.collapsed[b.dataset.fold]; render(); });
+  app.querySelectorAll('[data-cat-menu]').forEach(b => b.onclick = () => catMenu(obj, findCat(b.dataset.catMenu), isTemplate));
+  app.querySelectorAll('[data-del]').forEach(b => b.onclick = e => {
+    e.stopPropagation();
+    const el = b.closest('.item'); const c = findCat(el.dataset.catOf);
+    const it = c.items.find(i => i.id===b.dataset.del);
+    snapshot(); c.items = c.items.filter(i => i !== it); save(); render();
+    toast(`「${it.name}」を削除しました`, true);
+  });
+  app.querySelectorAll('[data-add-in]').forEach(b => b.onclick = () => addItemSheet(obj, isTemplate, b.dataset.addIn));
+}
+
+function renderSettings(){
+  app.innerHTML = `
+    <div class="top"><button class="icon-btn" data-act="back" aria-label="戻る">${ICON.back}</button><h1>設定</h1></div>
+    <div class="section-label">ひな形</div>
+    <button class="link-row" data-act="go-template"><span>ひな形の編集<br><small>新しい記録を作るときの項目一覧</small></span><span>›</span></button>
+    <div class="section-label">バックアップ</div>
+    <button class="link-row" data-act="export"><span>書き出す（JSON）<br><small>ファイルに保存・AirDrop で送れます</small></span><span>›</span></button>
+    <button class="link-row" data-act="import"><span>読み込む<br><small>書き出したファイルで、今のデータを置き換えます</small></span><span>›</span></button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+    <p class="note">データはこの iPhone の中だけに保存されます。機種変更の前や、念のため月に1回くらい書き出しておくと安心です。</p>
+    <div class="section-label">使い方</div>
+    <p class="note">項目：タップでチェックのあり・なし、長押しで対象外（グレーアウト）。<br>カテゴリ名：タップでまとめてチェック（全部済なら全部外す）、長押しでまとめて対象外（全部対象外なら戻す）。<br>まとめて変えた直後は、下に出る「元に戻す」で取り消せます。</p>
+    <p class="note" style="margin-top:20px">荷造りチェック ver 1.0</p>`;
+  const f = document.getElementById('importFile');
+  f.onchange = async () => {
+    const file = f.files[0]; if(!file) return;
+    try{
+      const data = JSON.parse(await file.text());
+      if(!data || !data.template || !Array.isArray(data.trips)) throw 0;
+      if(!confirm(`記録 ${data.trips.length} 件を読み込みます。今のデータは置き換わります。よろしいですか？`)) return;
+      snapshot(); db = data; save(); toast('読み込みました', true);
+    }catch(e){ alert('このファイルは読み込めませんでした。'); }
+    f.value='';
+  };
+}
+
+/* ========== 長押し判定 ========== */
+const LONG_MS = 450;
+// 長押しのあと指を離したときの click は無視する。次に触れた時点で解除
+let suppressClick = false;
+document.addEventListener('pointerdown', () => { suppressClick = false; }, true);
+function bindPress(nodes, {tap, long}){
+  // タップは click で拾う（指を離した直後に画面が切り替わっても、別の要素を誤って押さないため）
+  nodes.forEach(el => {
+    let timer=null, sx=0, sy=0, pressed=false;
+    const stopTimer = () => { clearTimeout(timer); timer=null; el.classList.remove('pressing'); };
+    el.addEventListener('pointerdown', e => {
+      if(e.target.closest('button') && e.target.closest('button') !== el) return;
+      pressed=true; sx=e.clientX; sy=e.clientY;
+      el.classList.add('pressing');
+      timer = setTimeout(() => {
+        timer=null; pressed=false; el.classList.remove('pressing');
+        suppressClick = true;
+        if(navigator.vibrate) navigator.vibrate(15);
+        long(el);
+      }, LONG_MS);
+    });
+    el.addEventListener('pointermove', e => {
+      if(timer && (Math.abs(e.clientX-sx)>10 || Math.abs(e.clientY-sy)>10)){ stopTimer(); pressed=false; }
+    });
+    el.addEventListener('pointerup', stopTimer);
+    el.addEventListener('pointercancel', () => { stopTimer(); pressed=false; });
+    el.addEventListener('click', e => {
+      if(e.target.closest('button') && e.target.closest('button') !== el) return;
+      const ok = pressed && !suppressClick;
+      pressed=false;
+      if(ok) tap(el);
+    });
+    el.addEventListener('contextmenu', e => e.preventDefault());
+  });
+}
+
+/* ========== シート ========== */
+const layer = document.getElementById('layer');
+function sheet(html, onMount){
+  layer.innerHTML = `<div class="scrim"></div><div class="sheet"><div class="grab"></div>${html}</div>`;
+  const scrim = layer.querySelector('.scrim'), sh = layer.querySelector('.sheet');
+  requestAnimationFrame(() => { scrim.classList.add('show'); sh.classList.add('show'); });
+  const close = () => { scrim.classList.remove('show'); sh.classList.remove('show'); setTimeout(() => { if(layer.contains(sh)) layer.innerHTML=''; }, 220); };
+  scrim.onclick = close;
+  onMount && onMount(sh, close);
+  return close;
+}
+function options(title, opts){
+  sheet(`<h2>${esc(title)}</h2>${opts.map((o,i) => o==='-' ? '<div class="sep"></div>' :
+    `<button class="opt ${o.danger?'danger':''}" data-i="${i}">${esc(o.label)}${o.sub?`<small>${esc(o.sub)}</small>`:''}</button>`).join('')}`,
+    (sh, close) => sh.querySelectorAll('.opt').forEach(b => b.onclick = () => { close(); opts[+b.dataset.i].run(); }));
+}
+function inputSheet({title, label, value='', ok='決定', extra='', onOk}){
+  sheet(`<h2>${esc(title)}</h2>
+    <label class="field"><span>${esc(label)}</span><input type="text" id="sIn" value="${esc(value)}" enterkeyhint="done"></label>
+    ${extra}
+    <div class="btns"><button data-x>キャンセル</button><button class="primary" data-ok>${esc(ok)}</button></div>`,
+    (sh, close) => {
+      const inp = sh.querySelector('#sIn');
+      setTimeout(() => inp.focus(), 60);
+      const go = () => { const v = inp.value.trim(); if(!v){ inp.focus(); return; } if(onOk(v, sh) !== false) close(); };
+      sh.querySelector('[data-ok]').onclick = go;
+      sh.querySelector('[data-x]').onclick = close;
+      inp.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); go(); } });
+    });
+}
+
+/* ========== 操作 ========== */
+function cloneTemplate(){
+  return db.template.cats.map(c => ({ id:uid(), name:c.name, items:c.items.map(i => ({id:uid(), name:i.name, s:0})) }));
+}
+function newTrip(){
+  inputSheet({ title:'新しい記録', label:'出張・旅行の名前', ok:'作成',
+    value:'',
+    onOk: name => {
+      const t = { id:uid(), name, createdAt:Date.now(), cats: cloneTemplate() };
+      db.trips.push(t); save(); location.hash = '#/trip/' + t.id;
+    }});
+  const inp = document.getElementById('sIn'); if(inp) inp.placeholder = '例：11/20 大阪出張';
+}
+function tripMenu(id){
+  const t = db.trips.find(x => x.id===id);
+  options(t.name, [
+    {label:'名前を変更', run: () => inputSheet({title:'名前を変更', label:'名前', value:t.name, onOk: v => { t.name=v; save(); render(); }})},
+    {label:'複製する', sub:'チェック状態ごとコピーします', run: () => {
+      const c = JSON.parse(JSON.stringify(t)); c.id=uid(); c.name=t.name+' のコピー'; c.createdAt=Date.now();
+      c.cats.forEach(cat => { cat.id=uid(); cat.items.forEach(i => i.id=uid()); });
+      db.trips.push(c); save(); render(); toast('複製しました');
+    }},
+    {label:'チェックをすべて外す', sub:'対象外の設定は残します', run: () => {
+      snapshot(); t.cats.forEach(c => c.items.forEach(i => { if(i.s===1) i.s=0; })); save(); render(); toast('チェックを外しました', true);
+    }},
+    '-',
+    {label:'削除する', danger:true, run: () => { snapshot(); db.trips = db.trips.filter(x => x!==t); save(); render(); toast(`「${t.name}」を削除しました`, true); }},
+  ]);
+}
+function catMenu(obj, c, isTemplate){
+  const opts = [];
+  if(!isTemplate){
+    const set = (fn, msg) => () => { snapshot(); c.items.forEach(fn); save(); render(); toast(msg, true); };
+    opts.push(
+      {label:'すべてチェック', sub:'対象外の項目はそのまま', run: set(i => { if(i.s!==2) i.s=1; }, `「${c.name}」をすべてチェックしました`)},
+      {label:'チェックをすべて外す', run: set(i => { if(i.s===1) i.s=0; }, `「${c.name}」のチェックを外しました`)},
+      {label:'すべて対象外にする', run: set(i => { i.s=2; }, `「${c.name}」をすべて対象外にしました`)},
+      {label:'対象外をすべて戻す', run: set(i => { if(i.s===2) i.s=0; }, `「${c.name}」の対象外を戻しました`)},
+      '-');
+  }
+  opts.push(
+    {label:'項目を追加', run: () => addItemSheet(obj, isTemplate, c.id)},
+    {label:'カテゴリ名を変更', run: () => renameCatSheet(obj, c)},
+    {label:'上へ移動', run: () => moveCat(obj, c, -1)},
+    {label:'下へ移動', run: () => moveCat(obj, c, 1)},
+    '-',
+    {label:'カテゴリを削除', danger:true, sub:`中の ${c.items.length} 項目も消えます`, run: () => {
+      snapshot(); obj.cats = obj.cats.filter(x => x!==c); save(); render(); toast(`「${c.name}」を削除しました`, true);
+    }});
+  options(c.name, opts);
+}
+function moveCat(obj, c, d){
+  const i = obj.cats.indexOf(c), j = i+d;
+  if(j<0 || j>=obj.cats.length) return;
+  [obj.cats[i], obj.cats[j]] = [obj.cats[j], obj.cats[i]]; save(); render();
+}
+function renameCatSheet(obj, c){
+  inputSheet({title:'カテゴリ名を変更', label:'カテゴリ名', value:c.name, onOk: v => { c.name=v; save(); render(); }});
+}
+function renameItemSheet(obj, c, it, isTemplate){
+  const idx = obj.cats.indexOf(c);
+  sheet(`<h2>項目を編集</h2>
+    <label class="field"><span>項目名</span><input type="text" id="sIn" value="${esc(it.name)}" enterkeyhint="done"></label>
+    <label class="field"><span>カテゴリ</span><select id="sCat">${obj.cats.map((x,i) => `<option value="${i}" ${i===idx?'selected':''}>${esc(x.name)}</option>`).join('')}</select></label>
+    <div class="btns" style="margin-bottom:10px"><button data-up>↑ 上へ</button><button data-down>↓ 下へ</button></div>
+    <div class="btns"><button data-x>キャンセル</button><button class="primary" data-ok>保存</button></div>`,
+    (sh, close) => {
+      const mv = d => { const i=c.items.indexOf(it), j=i+d; if(j<0||j>=c.items.length) return; [c.items[i],c.items[j]]=[c.items[j],c.items[i]]; save(); render(); };
+      sh.querySelector('[data-up]').onclick = () => mv(-1);
+      sh.querySelector('[data-down]').onclick = () => mv(1);
+      sh.querySelector('[data-x]').onclick = close;
+      sh.querySelector('[data-ok]').onclick = () => {
+        const v = sh.querySelector('#sIn').value.trim(); if(!v) return;
+        it.name = v;
+        const to = obj.cats[+sh.querySelector('#sCat').value];
+        if(to !== c){ c.items = c.items.filter(x => x!==it); to.items.push(it); }
+        save(); render(); close();
+      };
+    });
+}
+function addItemSheet(obj, isTemplate, catId){
+  const cats = obj.cats;
+  if(!cats.length){ addCatSheet(obj, isTemplate); return; }
+  const sel = catId || (cats[cats.length-1] && cats[cats.length-1].id);
+  sheet(`<h2>項目を追加</h2>
+    <label class="field"><span>項目名</span><input type="text" id="sIn" enterkeyhint="done" placeholder="例：名刺"></label>
+    <label class="field"><span>カテゴリ</span><select id="sCat">${cats.map(c => `<option value="${c.id}" ${c.id===sel?'selected':''}>${esc(c.name)}</option>`).join('')}</select></label>
+    ${isTemplate ? '' : `<label class="check-line"><input type="checkbox" id="sTpl">ひな形にも追加する（次の記録から出てきます）</label>`}
+    <div class="btns"><button data-x>閉じる</button><button class="primary" data-ok>追加</button></div>
+    <p class="note" style="text-align:center">続けて入力できます</p>`,
+    (sh, close) => {
+      const inp = sh.querySelector('#sIn');
+      setTimeout(() => inp.focus(), 60);
+      const go = () => {
+        const v = inp.value.trim(); if(!v){ inp.focus(); return; }
+        const c = cats.find(x => x.id===sh.querySelector('#sCat').value);
+        c.items.push(isTemplate ? {id:uid(), name:v} : {id:uid(), name:v, s:0});
+        const tpl = sh.querySelector('#sTpl');
+        if(tpl && tpl.checked){
+          let tc = db.template.cats.find(x => x.name===c.name);
+          if(!tc){ tc = {id:uid(), name:c.name, items:[]}; db.template.cats.push(tc); }
+          if(!tc.items.some(i => i.name===v)) tc.items.push({id:uid(), name:v});
+        }
+        save(); render(); toast(`「${v}」を追加しました`);
+        inp.value=''; inp.focus();
+      };
+      sh.querySelector('[data-ok]').onclick = go;
+      sh.querySelector('[data-x]').onclick = close;
+      inp.addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); go(); } });
+    });
+}
+function addCatSheet(obj, isTemplate){
+  inputSheet({title:'カテゴリを追加', label:'カテゴリ名', ok:'追加', onOk: v => { obj.cats.push({id:uid(), name:v, items:[]}); save(); render(); }});
+}
+async function exportData(){
+  const d = new Date(); const pad = n => String(n).padStart(2,'0');
+  const name = `荷造りチェック_${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}.json`;
+  const blob = new Blob([JSON.stringify(db, null, 1)], {type:'application/json'});
+  const file = new File([blob], name, {type:'application/json'});
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:name}); }catch(e){}
+    return;
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ========== ボタンの割り当て ========== */
+app.addEventListener('click', e => {
+  const b = e.target.closest('[data-act],[data-trip-menu]'); if(!b) return;
+  if(b.dataset.tripMenu){ e.stopPropagation(); tripMenu(b.dataset.tripMenu); return; }
+  const r = route();
+  const obj = r.view==='template' ? db.template : r.view==='trip' ? db.trips.find(t => t.id===r.id) : null;
+  switch(b.dataset.act){
+    case 'settings': location.hash = '#/settings'; break;
+    case 'go-template': location.hash = '#/template'; break;
+    case 'back': location.hash = r.view==='template' ? '#/settings' : ''; break;
+    case 'new-trip': newTrip(); break;
+    case 'edit': ui.editing = !ui.editing; render(); break;
+    case 'hide-done': ui.hideDone = !ui.hideDone; render(); break;
+    case 'add-item': addItemSheet(obj, r.view==='template'); break;
+    case 'add-cat': addCatSheet(obj, r.view==='template'); break;
+    case 'export': exportData(); break;
+    case 'import': document.getElementById('importFile').click(); break;
+  }
+});
+
+load();
+render();
+
+if('serviceWorker' in navigator && location.protocol !== 'file:'){
+  navigator.serviceWorker.register('sw.js').catch(()=>{});
+}
+</script>
+</body>
+</html>
